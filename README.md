@@ -19,10 +19,81 @@ half_add_sub_tb.v	Stimulus and VCD generation
 
 ### Verilog Program
 ```
+// gedit half_add_sub.v
+module half_adder (
+    input  wire A,
+    input  wire B,
+    output wire Sum,
+    output wire Carry
+);
+    assign Sum   = A ^ B;   // XOR
+    assign Carry = A & B;   // AND
+endmodule
+ 
+module half_subtractor (
+    input  wire A,
+    input  wire B,
+    output wire Diff,
+    output wire Borrow
+);
+    assign Diff   = A ^ B;      // XOR
+    assign Borrow = (~A) & B;  // A' . B
+endmodule
+
 ```
 ### Testbench Program
-
-
+```
+// gedit tb6.v
+ 
+module tb6;
+    reg  clk, rst, sin;
+    wire sout;
+    wire [3:0] Q;
+ 
+    // Instantiate the shift register
+    shift_reg uut (
+        .clk(clk),
+        .rst(rst),
+        .sin(sin),
+        .sout(sout),
+        .Q(Q)
+    );
+ 
+    // ---- Clock generation: 10 time-unit period ----
+    initial clk = 0;
+    always #5 clk = ~clk;
+ 
+    initial begin
+        // ---- VCD dump setup ----
+        $dumpfile("shift_reg.vcd");   // name of the VCD file to be generated
+        $dumpvars(0, tb6);              // dump all signals in this testbench hierarchy
+ 
+        $monitor("Time=%0t rst=%b clk=%b sin=%b | Q=%b sout=%b",
+                  $time, rst, clk, sin, Q, sout);
+ 
+        // ---- Apply asynchronous reset ----
+        rst = 1; sin = 0;
+        #7  rst = 0;
+ 
+        // ---- Serially shift in the bit pattern 1 0 1 1 ----
+        @(negedge clk); sin = 1;
+        @(negedge clk); sin = 0;
+        @(negedge clk); sin = 1;
+        @(negedge clk); sin = 1;
+ 
+        // ---- Hold sin = 0 and observe the pattern shift out ----
+        @(negedge clk); sin = 0;
+        @(negedge clk);
+        @(negedge clk);
+ 
+        // ---- Apply reset again mid-simulation ----
+        @(negedge clk); rst = 1;
+        @(negedge clk); rst = 0; sin = 1;
+ 
+        #20 $finish;
+    end
+endmodule
+```
 ### Truth Table
 
 
